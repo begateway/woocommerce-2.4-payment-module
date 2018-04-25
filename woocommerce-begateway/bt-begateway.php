@@ -98,6 +98,7 @@ function bt_begateway_go()
       //callback URL - hooks into the WP/WooCommerce API and initiates the payment class for the bank server so it can access all functions
       $this->notify_url    = str_replace( 'https:', 'http:', add_query_arg( 'wc-api', 'BT_beGateway', home_url( '/' ) ) );
       $this->notify_url    = str_replace('carts.local','webhook.begateway.com:8443', $this->notify_url);
+      $this->notify_url    = str_replace('app.docker.local:8080','webhook.begateway.com:8443', $this->notify_url);
 
       $this->method_title             = $this->title;
       $this->description              = $this->settings['description'];
@@ -243,7 +244,7 @@ function bt_begateway_go()
 
       $token->money->setCurrency(get_woocommerce_currency());
       $token->money->setAmount($order->order_total);
-      $token->setDescription(__('Order', 'woocommerce') . ' # ' .$order->get_order_number());
+      $token->setDescription(__('Order', 'woocommerce') . ' ' . $order->get_order_number());
       $token->setTrackingId(ltrim( $order->get_order_number(), '#' ));
       $token->customer->setFirstName($order->billing_first_name);
       $token->customer->setLastName($order->billing_last_name);
@@ -258,10 +259,13 @@ function bt_begateway_go()
         $token->customer->setState($order->billing_state);
       }
 
+      $cancel_url = $order->get_cancel_order_url();
+      $cancel_url = str_replace('&amp;', '&', $cancel_url);
+
       $token->setSuccessUrl($this->get_return_url($order));
-      $token->setDeclineUrl($order->get_cancel_order_url_raw());
-      $token->setFailUrl($order->get_cancel_order_url_raw());
-      $token->setCancelUrl($order->get_cancel_order_url_raw());
+      $token->setDeclineUrl($cancel_url);
+      $token->setFailUrl($cancel_url);
+      $token->setCancelUrl($cancel_url);
       $token->setNotificationUrl($this->notify_url);
 
       $token->setLanguage($language);
@@ -285,7 +289,7 @@ function bt_begateway_go()
 
       //now look to the result array for the token
       if ($response->getToken()) {
-        $payment_url=$token->getRedirectUrlScriptName();
+        $payment_url=$response->getRedirectUrlScriptName();
 
         update_post_meta(  ltrim( $order->get_order_number(), '#' ), '_Token', $token );
         if ( 'yes' == $this->debug ){
