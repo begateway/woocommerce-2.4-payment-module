@@ -3,7 +3,7 @@
 Plugin Name: WooCommerce beGateway Payment Gateway
 Plugin URI: https://github.com/beGateway/woocommerce-payment-module
 Description: Extends WooCommerce with beGateway payment gateway.
-Version: 1.0.1
+Version: 1.0.2
 Author: beGateway development team
 
 Text Domain: woocommerce-begateway
@@ -91,10 +91,10 @@ function bt_begateway_go()
         $this->title                    = $this->settings['admin_title'];
       }
 
-      \beGateway\Settings::$gatewayBase = 'https://' . $this->settings['domain-gateway'];
-      \beGateway\Settings::$checkoutBase = 'https://' . $this->settings['domain-checkout'];
-      \beGateway\Settings::$shopId = $this->settings['shop-id'];
-      \beGateway\Settings::$shopKey = $this->settings['secret-key'];
+      \BeGateway\Settings::$gatewayBase = 'https://' . $this->settings['domain-gateway'];
+      \BeGateway\Settings::$checkoutBase = 'https://' . $this->settings['domain-checkout'];
+      \BeGateway\Settings::$shopId = $this->settings['shop-id'];
+      \BeGateway\Settings::$shopKey = $this->settings['secret-key'];
       //callback URL - hooks into the WP/WooCommerce API and initiates the payment class for the bank server so it can access all functions
       $this->notify_url    = str_replace( 'https:', 'http:', add_query_arg( 'wc-api', 'BT_beGateway', home_url( '/' ) ) );
       $this->notify_url    = str_replace('carts.local','webhook.begateway.com:8443', $this->notify_url);
@@ -229,13 +229,13 @@ function bt_begateway_go()
       $lang = explode('-', get_bloginfo('language'));
       $lang = $lang[0];
 
-      if(in_array($lang,\beGateway\Language::getSupportedLanguages())) {
+      if(in_array($lang,\BeGateway\Language::getSupportedLanguages())) {
         $language=$lang;
       } else {
         $language='en';
       }
 
-      $token = new \beGateway\GetPaymentToken;
+      $token = new \BeGateway\GetPaymentToken;
 
       if ($this->transaction_type == 'authorization') {
         $token->setAuthorizationTransactionType();
@@ -265,7 +265,6 @@ function bt_begateway_go()
       $token->setNotificationUrl($this->notify_url);
 
       $token->setLanguage($language);
-      $token->setAddressHidden();
 
       if ( 'yes' == $this->debug ){
         $this->log->add( 'begateway', 'Requesting token for order ' . $order->get_order_number()  );
@@ -286,7 +285,7 @@ function bt_begateway_go()
 
       //now look to the result array for the token
       if ($response->getToken()) {
-        $payment_url="https://" . $this->settings['domain-checkout'] . "/checkout";
+        $payment_url=$token->getRedirectUrlScriptName();
 
         update_post_meta(  ltrim( $order->get_order_number(), '#' ), '_Token', $token );
         if ( 'yes' == $this->debug ){
@@ -466,7 +465,7 @@ function bt_begateway_go()
 
       global $woocommerce;
 
-      $webhook = new \beGateway\Webhook;
+      $webhook = new \BeGateway\Webhook;
 
       if ($webhook->isAuthorized()) {
 
@@ -584,7 +583,7 @@ function bt_begateway_go()
       }
       // now send data to the server
 
-      $klass = '\\beGateway\\' . ucfirst($type);
+      $klass = '\\BeGateway\\' . ucfirst($type) . 'Operation';
       $transaction = new $klass();
       $transaction->setParentUid($post_uid);
       $transaction->money->setCurrency(get_woocommerce_currency());
