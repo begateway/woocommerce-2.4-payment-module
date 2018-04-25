@@ -56,7 +56,7 @@ if ( in_array( 'woocommerce/woocommerce.php', (array) get_option( 'active_plugin
 
 }
 
-require_once dirname(  __FILE__  ) . '/begateway-api-php/lib/beGateway.php';
+require_once dirname(  __FILE__  ) . '/begateway-api-php/lib/BeGateway.php';
 
 //Launch plugin
 function bt_begateway_go()
